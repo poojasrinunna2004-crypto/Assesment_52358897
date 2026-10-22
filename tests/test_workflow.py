@@ -12,6 +12,7 @@ from study_group.tools import (
     check_claims_against_sources,
     lookup_topic_sources,
 )
+from app import app as web_app
 
 
 class StudyGroupWorkflowTests(unittest.TestCase):
@@ -108,6 +109,53 @@ class StudyGroupWorkflowTests(unittest.TestCase):
         get.side_effect = RuntimeError("service unavailable")
         with self.assertRaisesRegex(RuntimeError, "service unavailable"):
             lookup_topic_sources.invoke({"topic": "ocean tides"})
+
+
+class StudyGroupWebsiteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        web_app.config["TESTING"] = True
+        self.client = web_app.test_client()
+
+    def test_home_page_explains_team_and_shows_sample_session(self) -> None:
+        response = self.client.get("/")
+        page = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("MEET YOUR STUDY PARTNERS", page)
+        self.assertIn("Topic Researcher", page)
+        self.assertIn("Quiz Maker", page)
+        self.assertIn("Fact-Checker", page)
+        self.assertIn("Context links", page)
+        self.assertIn("What was checked?", page)
+        self.assertIn("Everything your assignment asks for.", page)
+        self.assertIn("Download guide", page)
+
+    def test_study_form_validates_topic_and_generates_session(self) -> None:
+        empty_response = self.client.post("/study", data={"topic": " "})
+        self.assertEqual(empty_response.status_code, 400)
+        self.assertIn(
+            b"Please enter a topic before starting",
+            empty_response.data,
+        )
+
+        response = self.client.post(
+            "/study", data={"topic": "photosynthesis"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Quick knowledge check", response.data)
+
+    def test_health_check(self) -> None:
+        response = self.client.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "ok"})
+
+    def test_session_can_be_downloaded(self) -> None:
+        self.client.get("/")
+        response = self.client.get("/download")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "attachment; filename=study_group_session.md",
+            response.headers["Content-Disposition"],
+        )
 
 
 if __name__ == "__main__":

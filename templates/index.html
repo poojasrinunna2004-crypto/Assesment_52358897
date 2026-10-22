@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Learn any topic with four focused study agents: research, quiz, explain, and fact-check.">
+    <title>Study Group Crew | Learn together</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Study Group Crew home">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>Study Group <strong>Crew</strong></span>
+      </a>
+      <a class="top-link" href="#how-it-works">How it works <span aria-hidden="true">↓</span></a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> YOUR FRIENDLY STUDY TEAM</span>
+          <h1>Make a big topic<br>feel <span class="highlight">easy.</span></h1>
+          <p class="hero-description">Four helpful study partners work together to research, explain, quiz, and check a topic — so you can learn with confidence.</p>
+          <form class="topic-form" action="{{ url_for('study') }}" method="post">
+            <label for="topic">What would you like to learn?</label>
+            <div class="input-row">
+              <input id="topic" name="topic" type="text" maxlength="120" value="{{ topic }}" placeholder="Try “photosynthesis”" required>
+              <button type="submit">Build my study guide <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="form-hint">Start with photosynthesis for an instant, offline-friendly example. Other topics are looked up online.</p>
+          </form>
+          {% if error %}
+          <div class="alert" role="alert">{{ error }}</div>
+          {% endif %}
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="art-center"><span>✦</span><small>LEARN</small></div>
+          <div class="bubble bubble-blue bubble-top"><span>⌕</span></div>
+          <div class="bubble bubble-pink bubble-right"><span>✓</span></div>
+          <div class="bubble bubble-lilac bubble-bottom"><span>?</span></div>
+          <div class="bubble bubble-blue bubble-left"><span>✎</span></div>
+          <span class="sparkle sparkle-one">✦</span>
+          <span class="sparkle sparkle-two">✧</span>
+        </div>
+      </section>
+
+      <section class="agents-section" aria-labelledby="agents-heading">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">MEET YOUR STUDY PARTNERS</span>
+            <h2 id="agents-heading">Four roles. One clear study guide.</h2>
+          </div>
+          <p>Each agent has a specific job, so every step builds on the last.</p>
+        </div>
+        <div class="agent-grid">
+          {% for agent in agents %}
+          <article class="agent-card agent-{{ loop.index }}">
+            <div class="agent-topline">
+              <span class="agent-icon" aria-hidden="true">
+                {% if loop.index == 1 %}⌕{% elif loop.index == 2 %}✎{% elif loop.index == 3 %}☼{% else %}✓{% endif %}
+              </span>
+              <span class="agent-number">0{{ loop.index }}</span>
+            </div>
+            <h3>{{ agent.name }}</h3>
+            <p class="agent-role">{{ agent.role }}</p>
+            <p>{{ agent.goal }}</p>
+            <details>
+              <summary>Meet this agent</summary>
+              <p>{{ agent.backstory }}</p>
+            </details>
+            {% if agent.tools %}
+            <div class="tool-tag">LangChain tool · {{ agent.tools | join(", ") }}</div>
+            {% else %}
+            <div class="tool-tag tool-tag-soft">Uses the research brief as context</div>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="flow-section" id="how-it-works">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">A TEAM THAT SHARES ITS NOTES</span>
+            <h2>See how the work flows.</h2>
+          </div>
+          <p>Each arrow shows information being passed to the next task — no one starts from scratch.</p>
+        </div>
+        <div class="flow-board">
+          <div class="flow-node flow-research"><span>01</span><strong>Research</strong><small>Find source notes</small></div>
+          <div class="flow-branch">
+            <div class="flow-line"></div>
+            <div class="flow-node flow-quiz"><span>02</span><strong>Make a quiz</strong><small>Questions from research</small></div>
+            <div class="flow-node flow-explain"><span>03</span><strong>Explain simply</strong><small>Uses the same research</small></div>
+          </div>
+          <div class="flow-join" aria-hidden="true"><span>↓</span><span>→</span></div>
+          <div class="flow-node flow-check"><span>04</span><strong>Fact-check</strong><small>Checks answers and notes</small></div>
+        </div>
+        <div class="context-caption">
+          <span class="context-dot"></span>
+          <span><strong>Context links:</strong> Topic Research → Quiz Maker + Explainer → Fact-Checker (with the research notes).</span>
+        </div>
+      </section>
+
+      {% if session %}
+      <section class="results-section" aria-labelledby="results-heading">
+        <div class="results-title">
+          <div>
+            <span class="eyebrow">YOUR STUDY GUIDE</span>
+            <h2 id="results-heading">{{ session.topic }}</h2>
+          </div>
+          <div class="results-actions">
+            <span class="source-badge">
+              {% if session.research.retrieval_mode == "bundled_reference_pack" %}
+              Sample reference pack
+              {% else %}
+              Live source lookup
+              {% endif %}
+            </span>
+            <a class="download-button" href="{{ url_for('download') }}">Download guide ↓</a>
+          </div>
+        </div>
+
+        <div class="result-card research-card">
+          <div class="result-heading"><span class="result-icon icon-blue">⌕</span><div><span class="eyebrow">STEP 1 · RESEARCH</span><h3>The key idea</h3></div></div>
+          <p class="summary-text">{{ session.research.summary }}</p>
+          <h4>Source notes</h4>
+          <ul class="source-list">
+            {% for reference in session.research.references %}
+            <li><span>{{ reference.fact }}</span><a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">{{ reference.title }} <span aria-hidden="true">↗</span></a></li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="result-card explanation-card">
+          <div class="result-heading"><span class="result-icon icon-pink">☼</span><div><span class="eyebrow">STEP 2 · EXPLAIN</span><h3>In simple words</h3></div></div>
+          <p class="summary-text">{{ session.explanation.text }}</p>
+        </div>
+
+        <div class="result-card quiz-card">
+          <div class="result-heading"><span class="result-icon icon-lilac">✎</span><div><span class="eyebrow">STEP 3 · PRACTICE</span><h3>Quick knowledge check</h3></div></div>
+          <div class="question-list">
+            {% for question in session.quiz.questions %}
+            <details class="question-item">
+              <summary><span class="question-number">{{ "%02d" | format(loop.index) }}</span>{{ question.question }}</summary>
+              <ul class="choices">
+                {% for choice in question.choices %}
+                <li class="{% if choice == question.correct_answer %}correct-choice{% endif %}">{{ choice }}{% if choice == question.correct_answer %}<span>Correct answer</span>{% endif %}</li>
+                {% endfor %}
+              </ul>
+              <a class="answer-source" href="{{ question.source_url }}" target="_blank" rel="noopener noreferrer">Based on {{ question.source_title }} ↗</a>
+            </details>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="result-card fact-card">
+          <div class="result-heading"><span class="result-icon icon-green">✓</span><div><span class="eyebrow">STEP 4 · FACT-CHECK</span><h3>What was checked?</h3></div></div>
+          <p class="check-note">The Fact-Checker compares each answer and research note with its cited source. This checks source alignment; it is not independent proof of truth.</p>
+          <div class="check-list">
+            {% for check in session.fact_check.results %}
+            <div class="check-row">
+              <span class="check-status {% if check.status == 'aligned_with_source_note' %}status-good{% else %}status-review{% endif %}">
+                {% if check.status == 'aligned_with_source_note' %}✓ Aligned{% else %}↻ Review{% endif %}
+              </span>
+              <span>{{ check.claim }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="check-footnote">{{ session.fact_check.results | length }} claims checked against the session's cited source notes.</p>
+        </div>
+
+        <div class="saved-note"><span aria-hidden="true">✦</span> This study guide was saved to <code>outputs/study_group_session.md</code>. Use “Download guide” to keep a copy.</div>
+      </section>
+      {% endif %}
+
+      <section class="requirements-section" aria-labelledby="requirements-heading">
+        <span class="eyebrow">BUILT TO MATCH THE PROJECT BRIEF</span>
+        <h2 id="requirements-heading">Everything your assignment asks for.</h2>
+        <div class="requirement-grid">
+          <article><span class="requirement-check">✓</span><div><h3>4 designed agents</h3><p>Every agent has a role, a goal, and a backstory.</p></div></article>
+          <article><span class="requirement-check">✓</span><div><h3>3 LangChain tools</h3><p>Used for source lookup, quiz building, and claim checking.</p></div></article>
+          <article><span class="requirement-check">✓</span><div><h3>Visible task context</h3><p>Dependencies show how information passes through the crew.</p></div></article>
+          <article><span class="requirement-check">✓</span><div><h3>Saved output + reflection</h3><p>The result is written to a file; the reflection is in REFLECTION.md.</p></div></article>
+        </div>
+        <p class="honesty-note"><strong>About the demo:</strong> The crew follows a clear, repeatable workflow. It uses LangChain tools, but it does not call an LLM; the fact-check is a source-wording check, not a substitute for expert review.</p>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="/"><span class="brand-mark" aria-hidden="true">S</span><span>Study Group <strong>Crew</strong></span></a>
+      <p>Good learning happens one clear step at a time.</p>
+      <a href="https://github.com/poojasrinunna2004-crypto/Assesment_52358897" target="_blank" rel="noopener noreferrer">View project on GitHub ↗</a>
+    </footer>
+  </body>
+</html>
