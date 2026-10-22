@@ -126,7 +126,7 @@ class StudyGroupWebsiteTests(unittest.TestCase):
         self.assertIn("Fact-Checker", page)
         self.assertIn("Context links", page)
         self.assertIn("What was checked?", page)
-        self.assertIn("Everything your assignment asks for.", page)
+        self.assertNotIn("Everything your assignment asks for.", page)
         self.assertIn("Download guide", page)
 
     def test_study_form_validates_topic_and_generates_session(self) -> None:
